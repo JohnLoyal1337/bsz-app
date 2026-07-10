@@ -9,6 +9,28 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+from sqlalchemy import Column, Integer, String
+from pydantic import BaseModel
+
+# 1. Модель таблицы в PostgreSQL
+class EmployeeDB(Base):
+    tablename = "employees"
+
+    tab_num = Column(Integer, primary_key=True, index=True)
+    password = Column(String)
+    full_name = Column(String)
+    position = Column(String)
+
+# 2. Автоматически создаем таблицы в базе данных при запуске
+Base.metadata.create_all(bind=engine)
+
+# Функция-помощник для получения доступа к базе в запросах
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -71,11 +93,38 @@ class VacationRequest(BaseModel):
     vacation_type: str
 
 @app.post("/api/auth/login")
-def login(data: LoginRequest):
-    if data.tab_num in DB_EMPLOYEES and data.password == f"pass{data.tab_num}":
-        emp = DB_EMPLOYEES[data.tab_num]
-        return {"status": "success", "token": f"token-{data.tab_num}", "full_name": emp["full_name"], "position": emp["position"]}
+def login(data: LoginRequest, db: Session = Depends(get_db)):
+    # Ищем сотрудника в реальной базе данных по табельному номеру
+    emp = db.query(EmployeeDB).filter(EmployeeDB.tab_num == data.tab_num).first()
+    
+    # Если сотрудник найден и пароль совпадает
+    if emp and emp.password == data.password:
+        return {
+            "status": "success", 
+            "token": f"token-{emp.tab_num}", 
+            "full_name": emp.full_name, 
+            "position": emp.position
+        }
+        
     raise HTTPException(status_code=401, detail="Неверный табельный номер или пароль")
+# Временный маршрут для создания сотрудников через /docs
+@app.post("/api/auth/register")
+def register(data: LoginRequest, db: Session = Depends(get_db)):
+    # Проверяем, нет ли уже такого пользователя
+    existing = db.query(EmployeeDB).filter(EmployeeDB.tab_num == data.tab_num).first()
+    if existing:
+        return {"status": "error", "message": "Пользователь уже существует"}
+        
+    # Создаем нового сотрудника (можете вписать свои имя и должность по умолчанию)
+    new_emp = EmployeeDB(
+        tab_num=data.tab_num,
+        password=data.password,
+        full_name="Евгений Овчинников.", 
+        position="Машинист бульдозера 7 разряда"
+    )
+    db.add(new_emp)
+    db.commit() # Сохраняем в PostgreSQL насовсем!
+    return {"status": "success", "message": "Сотрудник успешно добавлен в базу"}
 
 @app.get("/api/salary/{tab_num}/{month}")
 def get_salary_slip(tab_num: str, month: str):
