@@ -159,7 +159,7 @@ async function submitVacation() {
         return;
     }
     try {
-        await fetch(`${API_URL}/vacation/request,` {
+        await fetch(`${API_URL}/vacation/request`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
