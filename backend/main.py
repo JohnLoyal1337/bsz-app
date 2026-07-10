@@ -22,7 +22,7 @@ class EmployeeDB(Base):
     position = Column(String)
 # Модель для расчетных листков (Зарплата)
 class SalaryDB(Base):
-    tablename = "salaries"
+    __tablename__ = "salaries"
 
     id = Column(Integer, primary_key=True, index=True)
     tab_num = Column(Integer, index=True)
@@ -33,7 +33,7 @@ class SalaryDB(Base):
 
 # Модель для дней отпуска
 class VacationDB(Base):
-    tablename = "vacations"
+    __tablename__ = "vacations"
 
     id = Column(Integer, primary_key=True, index=True)
     tab_num = Column(Integer, index=True)
