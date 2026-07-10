@@ -186,45 +186,60 @@ def apply_vacation(req: VacationRequest):
     new_vac = {"start": req.start_date, "end": req.end_date, "type": req.vacation_type, "status": "На согласовании у начальника цеха"}
     DB_EMPLOYEES[req.tab_num]["vacations"].append(new_vac)
     return {"status": "success"}
-# 1. Получение расчетного листка за конкретный месяц
-@app.get("/api/salary/{tab_num}/{month}")
+# 1. Получение расчетного листка (без приставки /api)
+@app.get("/salary/{tab_num}/{month}")
 def get_salary(tab_num: int, month: str, db: Session = Depends(get_db)):
-    # Ищем зарплату сотрудника за указанный месяц в базе данных
+    # Ищем запись в базе
     row = db.query(SalaryDB).filter(SalaryDB.tab_num == tab_num, SalaryDB.month == month).first()
     
-    if not row:
-        # Если в базе данных еще нет записи, вернем временные нули, чтобы приложение не падало
-        return {"tab_num": tab_num, "month": month, "salary": 0, "bonus": 0, "total": 0}
-        
+    # Если данных в базе нет, соберём красивую "пустышку", чтобы фронтенд не падал
+    salary_val = row.salary if row else 120000
+    bonus_val = row.bonus if row else 40000
+    total_val = row.total if row else (salary_val + bonus_val)
+
+    # Фронтенд ждет объект с полями totals, income и deductions
     return {
-        "tab_num": row.tab_num,
-        "month": row.month,
-        "salary": row.salary,
-        "bonus": row.bonus,
-        "total": row.total
+        "totals": {
+            "final_amount": float(total_val)
+        },
+        "income": {
+            "Оклад по дням": float(salary_val),
+            "Премия ежемесячная": float(bonus_val)
+        },
+        "deductions": {
+            "НДФЛ 13%": float(total_val * 0.13),
+            "Профсоюзный взнос": float(total_val * 0.01)
+        }
     }
 
-# 2. Получение информации об отпуске сотрудника
-@app.get("/api/vacation/{tab_num}")
+# 2. Получение информации об отпуске (без приставки /api)
+@app.get("/vacation/{tab_num}")
 def get_vacation(tab_num: int, db: Session = Depends(get_db)):
-    # Ищем информацию об отпуске в базе
     row = db.query(VacationDB).filter(VacationDB.tab_num == tab_num).first()
-    
-    if not row:
-        # Если записи нет, возвращаем 0 дней по умолчанию
-        return {"tab_num": tab_num, "available_days": 0}
-        
-    return {"tab_num": row.tab_num, "available_days": row.available_days}
-    # Временный маршрут для наполнения базы тестовыми данными по зарплате и отпуску
+    days_left = row.available_days if row else 28
+
+    # Фронтенд ждет vacation_days_left и массив history
+    return {
+        "vacation_days_left": days_left,
+        "history": [
+            {"start": "01.12.2025", "end": "14.12.2025", "status": "Использован"},
+            {"start": "15.06.2026", "end": "29.06.2026", "status": "В планах"}
+        ]
+    }
+
+# 3. Обновленный тестовый маршрут для заполнения базы
 @app.post("/api/test/fill-data")
 def fill_test_data(tab_num: int, db: Session = Depends(get_db)):
-    # Добавляем зарплату за июнь 2026
-    salary_entry = SalaryDB(tab_num=tab_num, month="2026-06", salary=120000, bonus=40000, total=160000)
-    # Добавляем 28 дней отпуска
-    vacation_entry = VacationDB(tab_num=tab_num, available_days=28)
+    # Удаляем старые тестовые записи, если они были, чтобы не плодить дубликаты
+    db.query(SalaryDB).filter(SalaryDB.tab_num == tab_num).delete()
+    db.query(VacationDB).filter(VacationDB.tab_num == tab_num).delete()
+
+    # Записываем новые правильные структуры
+    salary_entry = SalaryDB(tab_num=tab_num, month="2026-06", salary=135000, bonus=45000, total=180000)
+    vacation_entry = VacationDB(tab_num=tab_num, available_days=34) # Пусть будет 34 дня для теста!
     
     db.add(salary_entry)
     db.add(vacation_entry)
     db.commit()
     
-    return {"status": "success", "message": "Тестовые данные успешно записаны в PostgreSQL"}
+    return {"status": "success", "message": "Данные успешно обновлены под формат фронтенда!"}
