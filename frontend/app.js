@@ -133,31 +133,35 @@ function toggleSalaryVisibility() {
 
 async function loadVacationInfo() {
     try {
-        // Пробуем передать и в URL, и в Headers для надежности, пока не посмотрим код бэкенда
-        const response = await fetch(`${API_URL}/vacation/info?tab_num=${parseInt(currentTabNum)}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'tab_num': parseInt(currentTabNum) // на случай, если бэкенд ищет в заголовках
-            }
-        });
+        // 1. Передаем currentTabNum как обычную строку (убираем parseInt)
+        const response = await fetch(`${API_URL}/vacation/info?tab_num=${currentTabNum}`);
 
         if (!response.ok) {
             throw new Error(`Ошибка сервера: ${response.status}`);
         }
         
         const data = await response.json();
+        
+        // 2. Обновляем счетчик оставшихся дней (берём правильный ключ из бэкенда)
+        if (data.vacation_days_left !== undefined) {
+            document.getElementById("vacation-days-count").innerText = data.vacation_days_left;
+        }
+        
         const tbody = document.getElementById("table-vacations").getElementsByTagName('tbody')[0];
         tbody.innerHTML = ""; 
         
-        const requests = data.requests || data; 
+        // 3. Достаем массив истории из ключа data.history, как отдаёт бэкенд
+        const requests = data.history; 
         if (Array.isArray(requests)) {
             requests.forEach(r => {
                 let row = tbody.insertRow();
+                // Выводим тип отпуска и даты
                 row.insertCell(0).innerText = `${r.request_type || 'Отпуск'}: ${r.start_date} по ${r.end_date}`;
+                
                 let statusCell = row.insertCell(1);
                 statusCell.innerText = r.status;
                 
+                // Подкрашиваем статус
                 if (r.status === 'Утвержден') statusCell.style.color = 'green';
                 if (r.status === 'Отклонен') statusCell.style.color = 'red';
                 if (r.status === 'Ожидает рассмотрения') statusCell.style.color = 'orange';
