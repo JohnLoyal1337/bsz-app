@@ -18,7 +18,7 @@ function switchTab(tabId) {
     // Загрузка всех заявок для шефа
 async function loadManagerRequests() {
     try {
-        const response = await fetch(${API_URL}/requests/all);
+        const response = await fetch(`${API_URL}/requests/all)`;
         const data = await response.json();
         const tbody = document.getElementById("table-manager-requests").getElementsByTagName('tbody')[0];
         tbody.innerHTML = "";
@@ -35,7 +35,6 @@ async function loadManagerRequests() {
                 actionsCell.innerHTML = 
                     <button onclick="updateStatus(${r.id}, 'Утвержден')" style="background: green; color: white;">Утвердить</button>
                     <button onclick="updateStatus(${r.id}, 'Отклонен')" style="background: red; color: white;">Отклонить</button>
-                ;
             } else {
                 actionsCell.innerText = "Решение принято";
             }
