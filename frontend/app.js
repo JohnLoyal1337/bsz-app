@@ -58,7 +58,7 @@ async function updateStatus(reqId, status) {
     }
 }
 }
-}
+
 
 // Замените вашу функцию handleLogin на эту:
 async function handleLogin() {
