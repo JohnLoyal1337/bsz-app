@@ -134,7 +134,7 @@ function toggleSalaryVisibility() {
 async function loadVacationInfo() {
     try {
         // 1. Передаем currentTabNum как обычную строку (убираем parseInt)
-        const response = await fetch(`${API_URL}/vacation/info?tab_num=${currentTabNum}`);
+        const response = await fetch(`${API_URL}/vacation/info/${currentTabNum}`);
 
         if (!response.ok) {
             throw new Error(`Ошибка сервера: ${response.status}`);
