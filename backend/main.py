@@ -286,3 +286,34 @@ def create_vacation_request(req: VacationRequest, db: Session = Depends(get_db))
     db.add(new_request)
     db.commit()
     return {"status": "success", "message": "Заявление успешно сохранено в базе данных!"}
+# 1. Получить список всех заявок (для панели руководителя)
+@app.get("/requests/all")
+def get_all_requests(db: Session = Depends(get_db)):
+    # Запрашиваем все заявки из базы данных
+    requests = db.query(RequestDB).all()
+    
+    # Превращаем их в удобный для фронтенда список словарей
+    output = []
+    for r in requests:
+        output.append({
+            "id": r.id,
+            "tab_num": r.tab_num,
+            "request_type": r.request_type,
+            "start_date": r.start_date,
+            "end_date": r.end_date,
+            "status": r.status
+        })
+    return output
+
+# 2. Изменить статус заявки (Утвердить или Отклонить)
+@app.post("/requests/update-status")
+def update_request_status(req_id: int, new_status: str, db: Session = Depends(get_db)):
+    # Ищем нужную заявку по её ID
+    db_request = db.query(RequestDB).filter(RequestDB.id == req_id).first()
+    if not db_request:
+        return {"status": "error", "message": "Заявка не найдена"}
+    
+    # Меняем статус и сохраняем
+    db_request.status = new_status
+    db.commit()
+    return {"status": "success", "message": f"Статус заявки изменен на '{new_status}'"}
