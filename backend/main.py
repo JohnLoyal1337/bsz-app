@@ -20,6 +20,24 @@ class EmployeeDB(Base):
     password = Column(String)
     full_name = Column(String)
     position = Column(String)
+# Модель для расчетных листков (Зарплата)
+class SalaryDB(Base):
+    tablename = "salaries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tab_num = Column(Integer, index=True)
+    month = Column(String)  # Будем хранить в формате "2026-06"
+    salary = Column(Integer)  # Оклад
+    bonus = Column(Integer)   # Премия
+    total = Column(Integer)   # Итого к выдаче
+
+# Модель для дней отпуска
+class VacationDB(Base):
+    tablename = "vacations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tab_num = Column(Integer, index=True)
+    available_days = Column(Integer)  # Сколько дней отпуска доступно всего
 
 # 2. Автоматически создаем таблицы в базе данных при запуске
 Base.metadata.create_all(bind=engine)
@@ -168,3 +186,45 @@ def apply_vacation(req: VacationRequest):
     new_vac = {"start": req.start_date, "end": req.end_date, "type": req.vacation_type, "status": "На согласовании у начальника цеха"}
     DB_EMPLOYEES[req.tab_num]["vacations"].append(new_vac)
     return {"status": "success"}
+# 1. Получение расчетного листка за конкретный месяц
+@app.get("/salary/{tab_num}/{month}")
+def get_salary(tab_num: int, month: str, db: Session = Depends(get_db)):
+    # Ищем зарплату сотрудника за указанный месяц в базе данных
+    row = db.query(SalaryDB).filter(SalaryDB.tab_num == tab_num, SalaryDB.month == month).first()
+    
+    if not row:
+        # Если в базе данных еще нет записи, вернем временные нули, чтобы приложение не падало
+        return {"tab_num": tab_num, "month": month, "salary": 0, "bonus": 0, "total": 0}
+        
+    return {
+        "tab_num": row.tab_num,
+        "month": row.month,
+        "salary": row.salary,
+        "bonus": row.bonus,
+        "total": row.total
+    }
+
+# 2. Получение информации об отпуске сотрудника
+@app.get("/vacation/{tab_num}")
+def get_vacation(tab_num: int, db: Session = Depends(get_db)):
+    # Ищем информацию об отпуске в базе
+    row = db.query(VacationDB).filter(VacationDB.tab_num == tab_num).first()
+    
+    if not row:
+        # Если записи нет, возвращаем 0 дней по умолчанию
+        return {"tab_num": tab_num, "available_days": 0}
+        
+    return {"tab_num": row.tab_num, "available_days": row.available_days}
+    # Временный маршрут для наполнения базы тестовыми данными по зарплате и отпуску
+@app.post("/api/test/fill-data")
+def fill_test_data(tab_num: int, db: Session = Depends(get_db)):
+    # Добавляем зарплату за июнь 2026
+    salary_entry = SalaryDB(tab_num=tab_num, month="2026-06", salary=120000, bonus=40000, total=160000)
+    # Добавляем 28 дней отпуска
+    vacation_entry = VacationDB(tab_num=tab_num, available_days=28)
+    
+    db.add(salary_entry)
+    db.add(vacation_entry)
+    db.commit()
+    
+    return {"status": "success", "message": "Тестовые данные успешно записаны в PostgreSQL"}
