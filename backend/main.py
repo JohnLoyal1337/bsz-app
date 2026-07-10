@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 # Код автоматически возьмет секретную ссылку DATABASE_URL из настроек Render
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -31,7 +31,7 @@ def get_db():
         yield db
     finally:
         db.close()
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
