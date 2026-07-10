@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Личный кабинет АО БСЗ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="auth-block" class="card">
+        <h2 style="text-align: center; color: #1a365d;">Вход в систему БСЗ</h2>
+        <input type="text" id="login-tab" placeholder="Табельный номер (1024)">
+        <input type="password" id="login-pass" placeholder="Пароль (pass1024)">
+        <button onclick="handleLogin()">Войти</button>
+        <p id="auth-error" style="color:red; text-align:center; display:none;"></p>
+    </div>
+
+    <div id="main-app" style="display: none;">
+        <div class="header-panel">
+            <div>
+                <h3 id="user-name" style="margin:0 0 5px 0;">ФИО</h3>
+                <p id="user-position" style="margin:0; font-size:14px; color:#cbd5e0;">Должность</p>
+            </div>
+            <button onclick="handleLogout()" style="width:100px; background:#e53e3e;">Выйти</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('salary-tab')">Расчетный листок</button>
+            <button class="tab-btn" onclick="switchTab('vacation-tab')">Отпуска</button>
+        </div>
+
+        <div id="salary-tab" class="tab-content active-content">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <select id="salary-month-select" onchange="loadSalarySlip()" style="width:60%;">
+                        <option value="2026-06">Июнь 2026</option>
+                        <option value="2026-05">Май 2026</option>
+                    </select>
+                    <button onclick="toggleSalaryVisibility()" style="width:35%;">Глазок</button>
+                </div>
+                <div class="total-badge">
+                    <span>К выплате на руки:</span><br>
+                    <strong id="final-amount-val">0.00 руб.</strong>
+                </div>
+                <h4>Начисления</h4>
+                <table id="table-income"><tbody></tbody></table>
+                <h4>Удержания</h4>
+                <table id="table-deductions"><tbody></tbody></table>
+            </div>
+        </div>
+
+        <div id="vacation-tab" class="tab-content">
+            <div class="card">
+                <h3>Остаток отпуска: <span id="vacation-days-count">0</span> дней</h3>
+                <h4>Оформить отпуск</h4>
+                <input type="date" id="vac-start">
+                <input type="date" id="vac-end">
+                <button onclick="submitVacation()">Отправить заявление</button>
+                <h4>История заявлений</h4>
+                <table id="table-vacations"><thead><tr><th>Период</th><th>Статус</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
