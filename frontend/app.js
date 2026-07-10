@@ -48,10 +48,10 @@ async function loadManagerRequests() {
 // Отправка решения (Утвердить/Отклонить) на бэкенд
 async function updateStatus(reqId, status) {
     try {
-        await fetch(${API_URL}/requests/update-status?req_id=${reqId}&new_status=${encodeURIComponent(status)}, {
+        await fetch(`${API_URL}/requests/update-status?req_id=${reqId}&new_status=${encodeURIComponent(status)}`, {
             method: 'POST'
         });
-        alert(Заявка ${status.toLowerCase()}а!);
+        alert(`Заявка ${status.toLowerCase()}а!`);
         loadManagerRequests(); // Обновляем таблицу
     } catch (err) {
         alert("Не удалось изменить статус");
@@ -65,7 +65,7 @@ async function handleLogin() {
     const tabNum = document.getElementById("login-tab").value;
     const password = document.getElementById("login-pass").value;
     try {
-        const response = await fetch(${API_URL}/api/auth/login, {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ tab_num: tabNum, password: password })
