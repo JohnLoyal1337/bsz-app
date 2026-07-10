@@ -38,6 +38,27 @@ class VacationDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     tab_num = Column(Integer, index=True)
     available_days = Column(Integer)  # Сколько дней отпуска доступно всего
+# Таблица для пользователей (сотрудников)
+class UserDB(Base):
+    tablename = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tab_num = Column(Integer, unique=True, index=True)
+    full_name = Column(String)
+    position = Column(String)
+    password = Column(String)
+    role = Column(String, default="worker")  # worker — рабочий, manager — начальник
+
+# Таблица для заявлений на отпуск и отгулы
+class RequestDB(Base):
+    tablename = "requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tab_num = Column(Integer, index=True)
+    request_type = Column(String)  # "Отпуск" или "Отгул за свой счет"
+    start_date = Column(String)    # Дата начала
+    end_date = Column(String)      # Дата окончания
+    status = Column(String, default="Ожидает рассмотрения") # Статус заявления
 
 # 2. Автоматически создаем таблицы в базе данных при запуске
 Base.metadata.create_all(bind=engine)
@@ -243,3 +264,25 @@ def fill_test_data(tab_num: int, db: Session = Depends(get_db)):
     db.commit()
     
     return {"status": "success", "message": "Данные успешно обновлены под формат фронтенда!"}
+from pydantic import BaseModel
+
+# Схема для валидации данных от фронтенда
+class VacationRequest(BaseModel):
+    tab_num: int
+    start_date: str
+    end_date: str
+    vacation_type: str
+
+# Маршрут для сохранения заявки
+@app.post("/vacation/request")
+def create_vacation_request(req: VacationRequest, db: Session = Depends(get_db)):
+    new_request = RequestDB(
+        tab_num=req.tab_num,
+        request_type=req.vacation_type,
+        start_date=req.start_date,
+        end_date=req.end_date,
+        status="Ожидает рассмотрения"
+    )
+    db.add(new_request)
+    db.commit()
+    return {"status": "success", "message": "Заявление успешно сохранено в базе данных!"}
