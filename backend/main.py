@@ -40,7 +40,7 @@ class VacationDB(Base):
     available_days = Column(Integer)  # Сколько дней отпуска доступно всего
 # Таблица для пользователей (сотрудников)
 class UserDB(Base):
-    tablename = "users"
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     tab_num = Column(Integer, unique=True, index=True)
@@ -51,7 +51,7 @@ class UserDB(Base):
 
 # Таблица для заявлений на отпуск и отгулы
 class RequestDB(Base):
-    tablename = "requests"
+    __tablename__ = "requests"
 
     id = Column(Integer, primary_key=True, index=True)
     tab_num = Column(Integer, index=True)
