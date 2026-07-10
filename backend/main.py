@@ -187,7 +187,7 @@ def apply_vacation(req: VacationRequest):
     DB_EMPLOYEES[req.tab_num]["vacations"].append(new_vac)
     return {"status": "success"}
 # 1. Получение расчетного листка за конкретный месяц
-@app.get("/salary/{tab_num}/{month}")
+@app.get("/api/salary/{tab_num}/{month}")
 def get_salary(tab_num: int, month: str, db: Session = Depends(get_db)):
     # Ищем зарплату сотрудника за указанный месяц в базе данных
     row = db.query(SalaryDB).filter(SalaryDB.tab_num == tab_num, SalaryDB.month == month).first()
@@ -205,7 +205,7 @@ def get_salary(tab_num: int, month: str, db: Session = Depends(get_db)):
     }
 
 # 2. Получение информации об отпуске сотрудника
-@app.get("/vacation/{tab_num}")
+@app.get("/api/vacation/{tab_num}")
 def get_vacation(tab_num: int, db: Session = Depends(get_db)):
     # Ищем информацию об отпуске в базе
     row = db.query(VacationDB).filter(VacationDB.tab_num == tab_num).first()
