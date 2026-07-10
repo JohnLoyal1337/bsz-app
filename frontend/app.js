@@ -15,10 +15,11 @@ function switchTab(tabId) {
     }
     if (tabId === 'manager-tab') {
     loadManagerRequests();
+    }
     // Загрузка всех заявок для шефа
 async function loadManagerRequests() {
     try {
-        const response = await fetch(`${API_URL}/requests/all)`;
+        const response = await fetch(`${API_URL}/requests/all`);
         const data = await response.json();
         const tbody = document.getElementById("table-manager-requests").getElementsByTagName('tbody')[0];
         tbody.innerHTML = "";
@@ -27,14 +28,14 @@ async function loadManagerRequests() {
             let row = tbody.insertRow();
             row.insertCell(0).innerText = r.tab_num;
             row.insertCell(1).innerText = r.request_type;
-            row.insertCell(2).innerText = ${r.start_date} по ${r.end_date};
+            row.insertCell(2).innerText = `${r.start_date} по ${r.end_date}`;
             row.insertCell(3).innerText = r.status;
             
             let actionsCell = row.insertCell(4);
             if (r.status === "Ожидает рассмотрения") {
-                actionsCell.innerHTML = 
+                actionsCell.innerHTML = ` 
                     <button onclick="updateStatus(${r.id}, 'Утвержден')" style="background: green; color: white;">Утвердить</button>
-                    <button onclick="updateStatus(${r.id}, 'Отклонен')" style="background: red; color: white;">Отклонить</button>
+                    <button onclick="updateStatus(${r.id}, 'Отклонен')" style="background: red; color: white;">Отклонить</button>`;
             } else {
                 actionsCell.innerText = "Решение принято";
             }
