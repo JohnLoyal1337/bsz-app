@@ -134,7 +134,7 @@ function toggleSalaryVisibility() {
 async function loadVacationInfo() {
     try {
         // Запрашиваем данные по конкретному сотруднику
-        const response = await fetch(`${API_URL}/vacation/info?tab_num=${currentTabNum}`);
+        const response = await fetch(`${API_URL}/vacation/info?tab_num=${parseInt(currentTabNum)}`);
         const data = await response.json();
         
         // Обновляем счетчик дней отпуска (если он есть в ответе)
