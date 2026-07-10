@@ -133,31 +133,31 @@ function toggleSalaryVisibility() {
 
 async function loadVacationInfo() {
     try {
-        // Запрашиваем данные по конкретному сотруднику
-        const response = await fetch(`${API_URL}/vacation/info?tab_num=${parseInt(currentTabNum)}`);
-        const data = await response.json();
-        
-        // Обновляем счетчик дней отпуска (если он есть в ответе)
-        if (data.vacation_days !== undefined) {
-            document.getElementById("vacation-days-count").innerText = data.vacation_days;
+        // Пробуем передать и в URL, и в Headers для надежности, пока не посмотрим код бэкенда
+        const response = await fetch(`${API_URL}/vacation/info?tab_num=${parseInt(currentTabNum)}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'tab_num': parseInt(currentTabNum) // на случай, если бэкенд ищет в заголовках
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Ошибка сервера: ${response.status}`);
         }
         
+        const data = await response.json();
         const tbody = document.getElementById("table-vacations").getElementsByTagName('tbody')[0];
-        tbody.innerHTML = ""; // Очищаем таблицу перед заполнением
+        tbody.innerHTML = ""; 
         
-        // Проверяем, есть ли у пользователя история заявок
         const requests = data.requests || data; 
         if (Array.isArray(requests)) {
             requests.forEach(r => {
                 let row = tbody.insertRow();
-                // Показываем Тип заявки и Период
                 row.insertCell(0).innerText = `${r.request_type || 'Отпуск'}: ${r.start_date} по ${r.end_date}`;
-                
-                // Показываем статус (Ожидает, Утвержден, Отклонен)
                 let statusCell = row.insertCell(1);
                 statusCell.innerText = r.status;
                 
-                // Подкрасим статус для красоты
                 if (r.status === 'Утвержден') statusCell.style.color = 'green';
                 if (r.status === 'Отклонен') statusCell.style.color = 'red';
                 if (r.status === 'Ожидает рассмотрения') statusCell.style.color = 'orange';
