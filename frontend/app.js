@@ -133,18 +133,38 @@ function toggleSalaryVisibility() {
 
 async function loadVacationInfo() {
     try {
-        const response = await fetch(`${API_URL}/vacation/${currentTabNum}`);
+        // Запрашиваем данные по конкретному сотруднику
+        const response = await fetch(`${API_URL}/vacation/info?tab_num=${currentTabNum}`);
         const data = await response.json();
-        document.getElementById("vacation-days-count").innerText = data.vacation_days_left;
+        
+        // Обновляем счетчик дней отпуска (если он есть в ответе)
+        if (data.vacation_days !== undefined) {
+            document.getElementById("vacation-days-count").innerText = data.vacation_days;
+        }
+        
         const tbody = document.getElementById("table-vacations").getElementsByTagName('tbody')[0];
-        tbody.innerHTML = "";
-        data.history.forEach(v => {
-            let row = tbody.insertRow();
-            row.insertCell(0).innerText = `${v.start} по ${v.end}`;
-            row.insertCell(1).innerText = v.status;
-        });
+        tbody.innerHTML = ""; // Очищаем таблицу перед заполнением
+        
+        // Проверяем, есть ли у пользователя история заявок
+        const requests = data.requests || data; 
+        if (Array.isArray(requests)) {
+            requests.forEach(r => {
+                let row = tbody.insertRow();
+                // Показываем Тип заявки и Период
+                row.insertCell(0).innerText = `${r.request_type || 'Отпуск'}: ${r.start_date} по ${r.end_date}`;
+                
+                // Показываем статус (Ожидает, Утвержден, Отклонен)
+                let statusCell = row.insertCell(1);
+                statusCell.innerText = r.status;
+                
+                // Подкрасим статус для красоты
+                if (r.status === 'Утвержден') statusCell.style.color = 'green';
+                if (r.status === 'Отклонен') statusCell.style.color = 'red';
+                if (r.status === 'Ожидает рассмотрения') statusCell.style.color = 'orange';
+            });
+        }
     } catch (err) {
-        console.error(err);
+        console.error("Ошибка загрузки истории заявлений:", err);
     }
 }
 
