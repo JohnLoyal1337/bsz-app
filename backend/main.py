@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 # 1. Модель таблицы в PostgreSQL
 class EmployeeDB(Base):
-    tablename = "employees"
+    __tablename__ = "employees"
 
     tab_num = Column(Integer, primary_key=True, index=True)
     password = Column(String)
