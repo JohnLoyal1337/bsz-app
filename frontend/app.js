@@ -51,10 +51,21 @@ async function handleLogin() {
         switchTab('salary-tab');
 
     } catch (err) {
-        errorBlock.innerText = err.message;
-        errorBlock.style.display = "block";
+        // 1. Выводим НАСТОЯЩУЮ причину в консоль, чтобы мы её увидели
+        console.error("РЕНДЕР ИЛИ БЭКЕНД ВЕРНУЛ ОШИБКУ:", err);
+
+        // 2. Ищем блок ошибки, но проверяем, существует ли он
+        const errorBlock = document.getElementById("login-error");
+        if (errorBlock) {
+            errorBlock.innerText = err.message;
+            errorBlock.style.display = "block";
+        } else {
+            // 3. Если блока в HTML нет, просто выводим окно на экран
+            alert("Ошибка авторизации: " + err.message);
+        }
     }
 }
+
 
 // 2. ВЫХОД ИЗ СИСТЕМЫ
 function logout() {
