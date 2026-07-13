@@ -179,6 +179,35 @@ async function loadSalarySlip() {
 
 // 5. ЗАГРУЗКА ИСТОРИИ ОТПУСКОВ (Решаем проблему ошибки 422!)
 async function loadVacationInfo() {
+    // --- ВОССТАНОВЛЕНИЕ ТАБЕЛЬНОГО НОМЕРА ПРИ ПЕРЕЗАГРУЗКЕ ---
+    if (!currentTabNum) {
+        const savedUser = localStorage.getItem("bsz_user");
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            // Записываем табельный номер обратно в глобальную переменную.
+            // (Проверяем оба варианта названия поля: tab_num или id)
+            currentTabNum = user.tab_num || user.id; 
+        }
+    }
+
+    // Если даже после этого номера нет, значит пользователь реально не вошел
+    if (!currentTabNum) {
+        console.warn("Запрос отпусков отменен: пользователь не авторизован (currentTabNum равен null)");
+        return;
+    }
+    // --- КОНЕЦ ПРОВЕРКИ ---
+
+    try {
+        // Передаем tab_num строго в Body методом POST, как заложено в бэкенде
+        const response = await fetch(`${API_URL}/vacation/info`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tab_num: currentTabNum.toString() })
+        });
+
+        if (!response.ok) throw new Error("Не удалось загрузить данные отпусков");
+
+        const data = await response.json();
     try {
         // Передаем tab_num строго в Body методом POST, как заложено в бэкенде
         const response = await fetch(`${API_URL}/vacation/info`, {
