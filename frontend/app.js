@@ -233,6 +233,32 @@ async function submitVacation() {
         alert("Выберите даты начала и окончания!");
         return;
     }
+    // --- РАСЧЁТ И ВАЛИДАЦИЯ КОЛИЧЕСТВА ДНЕЙ ---
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    
+    // Считаем разницу в миллисекундах и переводим в дни (включая день начала)
+    const timeDiff = endDate - startDate;
+    const daysRequested = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+
+    if (daysRequested <= 0) {
+        alert("Дата окончания не может быть раньше или равна дате начала!");
+        return;
+    }
+
+    // Забираем доступные дни из твоего тега vacation-days-count
+    const availableDaysEl = document.getElementById("vacation-days-count");
+    
+    if (availableDaysEl) {
+        const daysAvailable = parseInt(availableDaysEl.innerText) || 0;
+        
+        // Если Иванов просит больше, чем у него есть
+        if (daysRequested > daysAvailable) {
+            alert(`Ошибка! Вы запрашиваете ${daysRequested} дн. отпуска, а вам доступно только ${daysAvailable} дн.`);
+            return; // Жёсткий стоп. Код дальше (к запросу fetch) не пойдёт!
+        }
+    }
+    // --- КОНЕЦ ВАЛИДАЦИИ ---
 
     try {
         const response = await fetch(`${API_URL}/vacation/request`, {
@@ -319,6 +345,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const mainApp = document.getElementById("main-app");
         const userNameDiv = document.getElementById("user-name");
         const managerBtn = document.getElementById("manager-btn");
+        if (typeof loadVacationInfo === "function") {
+            loadVacationInfo(); 
+        }
 
         // Сразу переключаем экраны, минуя окно логина
         if (loginScreen) loginScreen.style.display = "none";
@@ -329,8 +358,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (managerBtn) {
             managerBtn.style.display = user.role === 'manager' ? "inline-block" : "none";
         }
-
-        // Тут можно вызвать функцию загрузки данных (например, загрузку отпусков), если она есть
-        // Например: loadVacations();
+        if (typeof loadVacationInfo === "function") {
+            loadVacationInfo(); 
+        }
     }
 });
