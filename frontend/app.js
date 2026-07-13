@@ -33,27 +33,21 @@ async function handleLogin() {
         // Сохраняем данные пользователя
         currentTabNum = user.tab_num;
         currentUserRole = user.role;
-
-        // --- БЕЗОПАСНАЯ СМЕНА ЭКРАНОВ ---
-        const loginScreen = document.getElementById("login-screen");
+    
+        // --- ФИНАЛЬНАЯ И КРАСИВАЯ СМЕНА ЭКРАНОВ ---
+        const loginScreen = document.getElementById("auth-block"); // ТВОЙ ИСТИННЫЙ ID
         const mainApp = document.getElementById("main-app");
         const managerBtn = document.getElementById("manager-btn");
         const userNameDiv = document.getElementById("user-name");
 
-        // Пытаемся скрыть экран логина
+        // Скрываем экран логина
         if (loginScreen) {
             loginScreen.style.display = "none";
-        } else {
-            console.warn("Предупреждение: Блок 'login-screen' не найден. Попробуем найти элемент 'login'...");
-            const altLogin = document.getElementById("login");
-            if (altLogin) altLogin.style.display = "none";
         }
 
-        // Пытаемся показать главное приложение
+        // Показываем главное приложение
         if (mainApp) {
             mainApp.style.display = "block";
-        } else {
-            console.error("Критическая ошибка: Блок 'main-app' не найден в HTML!");
         }
 
         // Выводим имя пользователя
@@ -69,7 +63,7 @@ async function handleLogin() {
                 managerBtn.style.display = "none";
             }
         }
-        // --------------------------------
+        
 
         // По умолчанию загружаем первую вкладку (Расчетный листок)
         switchTab('salary-tab');
