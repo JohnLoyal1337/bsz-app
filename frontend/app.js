@@ -196,18 +196,6 @@ async function loadVacationInfo() {
         return;
     }
     // --- КОНЕЦ ПРОВЕРКИ ---
-
-    try {
-        // Передаем tab_num строго в Body методом POST, как заложено в бэкенде
-        const response = await fetch(`${API_URL}/vacation/info`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tab_num: currentTabNum.toString() })
-        });
-
-        if (!response.ok) throw new Error("Не удалось загрузить данные отпусков");
-
-        const data = await response.json();
     try {
         // Передаем tab_num строго в Body методом POST, как заложено в бэкенде
         const response = await fetch(`${API_URL}/vacation/info`, {
