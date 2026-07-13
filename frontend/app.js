@@ -86,14 +86,36 @@ async function handleLogin() {
 
 // 2. ВЫХОД ИЗ СИСТЕМЫ
 function handleLogout() {
-    currentTabNum = null;
-    currentUserRole = null;
-    document.getElementById("login-tab").value = "";  
-    document.getElementById("login-pass").value = ""; 
-    document.getElementById("main-app").style.display = "none"; 
-    document.getElementById("login-screen").style.display = "block";
-    if(document.getElementById("login-error")) {
-        document.getElementById("login-error").style.display = "none";
+    // Сбрасываем переменные роли (если они используются)
+    if (typeof currentTabNum !== 'undefined') currentTabNum = null;
+    if (typeof currentUserRole !== 'undefined') currentUserRole = null;
+
+    // Безопасно очищаем поля ввода логина и пароля, если они есть
+    const loginField = document.getElementById("login-tab") || document.getElementById("login-input");
+    const passField = document.getElementById("login-pass") || document.getElementById("password-input");
+    if (loginField) loginField.value = "";
+    if (passField) passField.value = "";
+
+    // Находим наши главные экраны
+    const mainApp = document.getElementById("main-app");
+    const authBlock = document.getElementById("auth-block"); // ИСПОЛЬЗУЕМ ТВОЙ НАСТОЯЩИЙ ID
+    const loginError = document.getElementById("login-error");
+
+    // Прячем личный кабинет
+    if (mainApp) {
+        mainApp.style.display = "none";
+    }
+
+    // Показываем карточку входа обратно
+    if (authBlock) {
+        authBlock.style.display = "block";
+    } else {
+        console.error("Ошибка при выходе: Блок 'auth-block' не найден в HTML!");
+    }
+
+    // Прячем блок ошибок, если он есть
+    if (loginError) {
+        loginError.style.display = "none";
     }
 }
 
