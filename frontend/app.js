@@ -287,14 +287,14 @@ async function submitVacation() {
     // --- КОНЕЦ ВАЛИДАЦИИ ---
 
     // Дальше идёт твой fetch-запрос отправки данных на бэкенд
-    // --- ИСПРАВЛЕННЫЙ БЛОК ОТПРАВКИ ---
+    // --- ПОЛНОСТЬЮ ПРАВИЛЬНЫЙ БЛОК ОТПРАВКИ НА БЭКЕНД ---
     try {
-        // Передаем точные ключи 'start' и 'end', которые требует бэкенд
+        // Передаем строго те ключи, которые запросил сервер в ошибке
         const payload = {
             tab_num: currentTabNum.toString(),
-            type: type,
-            start: start, // Было start_date -> меняем на start
-            end: end      // Было end_date -> меняем на end
+            request_type: type, // Меняем type на request_type
+            start_date: start,  // Меняем start на start_date
+            end_date: end       // Меняем end на end_date
         };
 
         const response = await fetch(`${API_URL}/vacation/request`, {
