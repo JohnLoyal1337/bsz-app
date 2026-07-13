@@ -287,13 +287,14 @@ async function submitVacation() {
     // --- КОНЕЦ ВАЛИДАЦИИ ---
 
     // Дальше идёт твой fetch-запрос отправки данных на бэкенд
+    // --- ИСПРАВЛЕННЫЙ БЛОК ОТПРАВКИ ---
     try {
-        // Формируем объект для отправки
+        // Передаем точные ключи 'start' и 'end', которые требует бэкенд
         const payload = {
             tab_num: currentTabNum.toString(),
             type: type,
-            start_date: start,
-            end_date: end
+            start: start, // Было start_date -> меняем на start
+            end: end      // Было end_date -> меняем на end
         };
 
         const response = await fetch(`${API_URL}/vacation/request`, {
@@ -306,7 +307,6 @@ async function submitVacation() {
 
         alert("Заявление успешно отправлено!");
         
-        // Обновляем историю заявлений на экране
         if (typeof loadVacationInfo === "function") {
             loadVacationInfo();
         }
