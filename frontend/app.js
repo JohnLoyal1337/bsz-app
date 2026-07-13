@@ -195,9 +195,13 @@ async function loadVacationInfo() {
 
 // 6. ОТПРАВКА ЗАЯВЛЕНИЯ НА ОТПУСК / ОТГУЛ
 async function submitVacation() {
-    const type = document.getElementById("vacation-type").value;
-    const start = document.getElementById("vacation-start").value;
-    const end = document.getElementById("vacation-end").value;
+    // Безопасное получение типа отпуска: если элемента нет, код не упадёт, а запишет "отпуск"
+    const typeEl = document.getElementById("vacation-type");
+    const type = typeEl ? typeEl.value : "отпуск";
+
+    // Твои исправленные рабочие ID
+    const start = document.getElementById("vac-start").value;
+    const end = document.getElementById("vac-end").value;
 
     if (!start || !end) {
         alert("Выберите даты начала и окончания!");
