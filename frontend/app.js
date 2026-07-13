@@ -1,43 +1,226 @@
 const API_URL = "https://bsz-app.onrender.com";
-let currentTabNum = "";
-let isMasked = false;
-let currentSalaryData = null;
 
-function switchTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-content'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active-content');
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
+// Глобальные переменные сессии
+let currentTabNum = null;
+let currentUserRole = null;
+
+// 1. ФУНКЦИЯ АВТОРИЗАЦИИ (ВХОД)
+async function login() {
+    const tabNumInput = document.getElementById("tab-num").value.trim();
+    const passwordInput = document.getElementById("password").value.trim();
+    const errorBlock = document.getElementById("login-error");
+
+    if (!tabNumInput || !passwordInput) {
+        errorBlock.innerText = "Заполните все поля!";
+        errorBlock.style.display = "block";
+        return;
     }
-    if (tabId === 'vacation-tab') { 
-        loadVacationInfo(); 
-    }
-    if (tabId === 'manager-tab') {
-    loadManagerRequests();
-    }
-    // Загрузка всех заявок для шефа
-async function loadManagerRequests() {
+
     try {
-        const response = await fetch(`${API_URL}/requests/all`);
-        const data = await response.json();
-        const tbody = document.getElementById("table-manager-requests").getElementsByTagName('tbody')[0];
-        tbody.innerHTML = "";
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tab_num: tabNumInput, password: passwordInput })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || "Ошибка авторизации");
+        }
+
+        const user = await response.json();
         
-        data.forEach(r => {
+        // Сохраняем данные пользователя
+        currentTabNum = user.tab_num;
+        currentUserRole = user.role;
+
+        // Меняем экраны
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("main-screen").style.display = "block";
+        document.getElementById("user-name-display").innerText = user.name;
+
+        // Показываем кнопку руководителя, если вошел шеф
+        const managerBtn = document.getElementById("manager-btn");
+        if (user.role === 'manager') {
+            managerBtn.style.display = "inline-block";
+        } else {
+            managerBtn.style.display = "none";
+        }
+
+        // По умолчанию загружаем первую вкладку (Расчетный листок)
+        switchTab('salary-tab');
+
+    } catch (err) {
+        errorBlock.innerText = err.message;
+        errorBlock.style.display = "block";
+    }
+}
+
+// 2. ВЫХОД ИЗ СИСТЕМЫ
+function logout() {
+    currentTabNum = null;
+    currentUserRole = null;
+    document.getElementById("tab-num").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("main-screen").style.display = "none";
+    document.getElementById("login-screen").style.display = "block";
+    if(document.getElementById("login-error")) {
+        document.getElementById("login-error").style.display = "none";
+    }
+}
+
+// 3. ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+function switchTab(tabId) {
+    // Скрываем все вкладки
+    const tabs = document.querySelectorAll(".tab-content");
+    tabs.forEach(tab => tab.style.display = "none");
+
+    // Снимаем активный класс со всех кнопок
+    const buttons = document.querySelectorAll(".tab-btn");
+    buttons.forEach(btn => btn.classList.remove("active"));
+
+    // Показываем нужную вкладку
+    document.getElementById(tabId).style.display = "block";
+    
+    // Подсвечиваем нужную кнопку (находим по onclick атрибуту)
+    buttons.forEach(btn => {
+        if (btn.getAttribute("onclick").includes(tabId)) {
+            btn.classList.add("active");
+        }
+    });
+
+    // Автоматически подгружаем данные в зависимости от открытой вкладки
+    if (tabId === 'vacation-tab') {
+        loadVacationInfo();
+    } else if (tabId === 'manager-tab') {
+        loadManagerPanel();
+    }
+}
+
+// 4. ЗАГРУЗКА РАСЧЕТНОГО ЛИСТКА
+async function loadSalarySlip() {
+    const month = document.getElementById("salary-month").value;
+    const infoDiv = document.getElementById("salary-info");
+
+    try {
+        // Передаем через Query параметры (?tab_num=...&month=...) как настроено в FastAPI
+        const response = await fetch(`${API_URL}/salary/slip?tab_num=${currentTabNum}&month=${month}`);
+        
+        if (!response.ok) {
+            throw new Error("Данные за этот месяц отсутствуют");
+        }
+
+        const data = await response.json();
+        infoDiv.innerHTML = `
+            <p><strong>Оклад:</strong> ${data.salary} руб.</p>
+            <p><strong>Премия:</strong> ${data.bonus} руб.</p>
+            <p><strong>Налог (НДФЛ):</strong> ${data.tax} руб.</p>
+            <hr>
+            <p style="font-size: 1.2em; color: #2c3e50;"><strong>Итого к выдаче:</strong> ${data.total} руб.</p>
+        `;
+    } catch (err) {
+        infoDiv.innerHTML = `<p style="color: red;">${err.message}</p>`;
+    }
+}
+
+// 5. ЗАГРУЗКА ИСТОРИИ ОТПУСКОВ (Решаем проблему ошибки 422!)
+async function loadVacationInfo() {
+    try {
+        // Передаем tab_num строго в Body методом POST, как заложено в бэкенде
+        const response = await fetch(`${API_URL}/vacation/info`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tab_num: currentTabNum.toString() })
+        });
+
+        if (!response.ok) throw new Error("Не удалось загрузить данные отпусков");
+
+        const data = await response.json();
+
+        // Обновляем остаток дней
+        if (data.vacation_days_left !== undefined) {
+            document.getElementById("vacation-days-count").innerText = data.vacation_days_left;
+        }
+
+        // Заполняем таблицу истории
+        const tbody = document.querySelector("#table-vacations tbody");
+        tbody.innerHTML = "";
+
+        if (Array.isArray(data.history)) {
+            data.history.forEach(r => {
+                let row = tbody.insertRow();
+                row.insertCell(0).innerText = `${r.request_type}: с ${r.start_date} по ${r.end_date}`;
+                
+                let statusCell = row.insertCell(1);
+                statusCell.innerText = r.status;
+
+                // Цвета для статусов
+                if (r.status === 'Утвержден') statusCell.style.color = 'green';
+                if (r.status === 'Ожидает рассмотрения') statusCell.style.color = 'orange';
+                if (r.status === 'Отклонен') statusCell.style.color = 'red';
+            });
+        }
+    } catch (err) {
+        console.error("Ошибка:", err);
+    }
+}
+
+// 6. ОТПРАВКА ЗАЯВЛЕНИЯ НА ОТПУСК / ОТГУЛ
+async function submitVacation() {
+    const type = document.getElementById("vacation-type").value;
+    const start = document.getElementById("vacation-start").value;
+    const end = document.getElementById("vacation-end").value;
+
+    if (!start || !end) {
+        alert("Выберите даты начала и окончания!");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/vacation/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tab_num: currentTabNum.toString(),
+                request_type: type,
+                start_date: start,
+                end_date: end
+            })
+        });
+
+        if (!response.ok) throw new Error("Ошибка при отправке заявления");
+
+        alert("Заявление отправлено начальнику цеха!");
+        
+        // Сразу обновляем таблицу истории, чтобы строчка появилась автоматически!
+        loadVacationInfo();
+
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+// 7. ЗАГРУЗКА ПАНЕЛИ РУКОВОДИТЕЛЯ
+async function loadManagerPanel() {
+    try {
+        const response = await fetch(`${API_URL}/manager/requests?manager_tab_num=${currentTabNum}`);
+        if (!response.ok) throw new Error("Ошибка доступа к панели");
+
+        const requests = await response.json();
+        const tbody = document.querySelector("#table-manager-requests tbody");
+        tbody.innerHTML = "";
+
+        requests.forEach(r => {
             let row = tbody.insertRow();
-            row.insertCell(0).innerText = r.tab_num;
-            row.insertCell(1).innerText = r.request_type;
-            row.insertCell(2).innerText = `${r.start_date} по ${r.end_date}`;
-            row.insertCell(3).innerText = r.status;
+            row.insertCell(0).innerText = r.name;
+            row.insertCell(1).innerText = `${r.request_type} (${r.start_date} - ${r.end_date})`;
             
-            let actionsCell = row.insertCell(4);
-            if (r.status === "Ожидает рассмотрения") {
-                actionsCell.innerHTML = ` 
-                    <button onclick="updateStatus(${r.id}, 'Утвержден')" style="background: green; color: white;">Утвердить</button>
-                    <button onclick="updateStatus(${r.id}, 'Отклонен')" style="background: red; color: white;">Отклонить</button>`;
+            let actionCell = row.insertCell(2);
+            if (r.status === 'Ожидает рассмотрения') {
+                actionCell.innerHTML = `<button onclick="approveRequest(${r.id})" style="background-color: green; color: white; border: none; padding: 3px 8px; cursor: pointer; border-radius: 3px;">Утвердить</button>`;
             } else {
-                actionsCell.innerText = "Решение принято";
+                actionCell.innerText = r.status;
+                if (r.status === 'Утвержден') actionCell.style.color = 'green';
             }
         });
     } catch (err) {
@@ -45,161 +228,24 @@ async function loadManagerRequests() {
     }
 }
 
-// Отправка решения (Утвердить/Отклонить) на бэкенд
-async function updateStatus(reqId, status) {
+// 8. УТВЕРЖДЕНИЕ ЗАЯВКИ РУКОВОДИТЕЛЕМ
+async function approveRequest(requestId) {
     try {
-        await fetch(`${API_URL}/requests/update-status?req_id=${reqId}&new_status=${encodeURIComponent(status)}`, {
-            method: 'POST'
-        });
-        alert(`Заявка ${status.toLowerCase()}а!`);
-        loadManagerRequests(); // Обновляем таблицу
-    } catch (err) {
-        alert("Не удалось изменить статус");
-    }
-}
-}
-
-
-// Замените вашу функцию handleLogin на эту:
-async function handleLogin() {
-    const tabNum = document.getElementById("login-tab").value;
-    const password = document.getElementById("login-pass").value;
-    try {
-        const response = await fetch(`${API_URL}/api/auth/login`, {
+        const response = await fetch(`${API_URL}/manager/approve`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ tab_num: tabNum, password: password })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                request_id: requestId,
+                manager_tab_num: currentTabNum.toString()
+            })
         });
-        if (!response.ok) throw new Error("Неверный табельный номер или пароль");
-        const data = await response.json();
-        currentTabNum = tabNum;
-        
-        document.getElementById("auth-block").style.display = "none";
-        document.getElementById("main-app").style.display = "block";
-        document.getElementById("user-name").innerText = data.full_name;
-        document.getElementById("user-position").innerText = data.position;
 
-        // ПРОВЕРКА РОЛИ: если зашел начальник
-        if (data.role === 'manager') {
-            document.getElementById("manager-btn").style.display = "inline-block";
-        }
+        if (!response.ok) throw new Error("Не удалось утвердить заявку");
 
-        loadSalarySlip();
+        alert("Заявка успешно утверждена!");
+        loadManagerPanel(); // Перезагружаем панель шефа, чтобы обновился статус
+
     } catch (err) {
         alert(err.message);
     }
-}
-
-async function loadSalarySlip() {
-    try {
-        const month = document.getElementById("salary-month-select").value;
-        const response = await fetch(`${API_URL}/salary/${currentTabNum}/${month}`);
-        if (!response.ok) throw new Error("Ошибка загрузки квитка");
-        currentSalaryData = await response.json();
-        renderSalary();
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-function renderSalary() {
-    if (!currentSalaryData) return;
-    const finalAmt = document.getElementById("final-amount-val");
-    finalAmt.innerText = `${currentSalaryData.totals.final_amount.toFixed(2)} руб.`;
-    
-    if (isMasked) finalAmt.classList.add("hidden-money");
-    else finalAmt.classList.remove("hidden-money");
-
-    fillTable("table-income", currentSalaryData.income);
-    fillTable("table-deductions", currentSalaryData.deductions);
-}
-
-function fillTable(tableId, data) {
-    const tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-    tbody.innerHTML = "";
-    for (const [name, val] of Object.entries(data)) {
-        let row = tbody.insertRow();
-        row.insertCell(0).innerText = name;
-        let cVal = row.insertCell(1);
-        cVal.innerText = `${val.toFixed(2)} руб.`;
-        if (isMasked) cVal.classList.add("hidden-money");
-    }
-}
-
-function toggleSalaryVisibility() {
-    isMasked = !isMasked;
-    renderSalary();
-}
-
-async function loadVacationInfo() {
-    try {
-        // 1. Передаем currentTabNum как обычную строку (убираем parseInt)
-        const response = await fetch(`${API_URL}/vacation/info/${currentTabNum}`);
-
-        if (!response.ok) {
-            throw new Error(`Ошибка сервера: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        // 2. Обновляем счетчик оставшихся дней (берём правильный ключ из бэкенда)
-        if (data.vacation_days_left !== undefined) {
-            document.getElementById("vacation-days-count").innerText = data.vacation_days_left;
-        }
-        
-        const tbody = document.getElementById("table-vacations").getElementsByTagName('tbody')[0];
-        tbody.innerHTML = ""; 
-        
-        // 3. Достаем массив истории из ключа data.history, как отдаёт бэкенд
-        const requests = data.history; 
-        if (Array.isArray(requests)) {
-            requests.forEach(r => {
-                let row = tbody.insertRow();
-                // Выводим тип отпуска и даты
-                row.insertCell(0).innerText = `${r.request_type || 'Отпуск'}: ${r.start_date} по ${r.end_date}`;
-                
-                let statusCell = row.insertCell(1);
-                statusCell.innerText = r.status;
-                
-                // Подкрашиваем статус
-                if (r.status === 'Утвержден') statusCell.style.color = 'green';
-                if (r.status === 'Отклонен') statusCell.style.color = 'red';
-                if (r.status === 'Ожидает рассмотрения') statusCell.style.color = 'orange';
-            });
-        }
-    } catch (err) {
-        console.error("Ошибка загрузки истории заявлений:", err);
-    }
-}
-
-// Замените вашу функцию submitVacation на эту:
-async function submitVacation() {
-    const start = document.getElementById("vac-start").value;
-    const end = document.getElementById("vac-end").value;
-    const type = document.getElementById("vac-type").value;
-    
-    if (!start || !end) {
-        alert("Выберите даты");
-        return;
-    }
-    try {
-        await fetch(`${API_URL}/vacation/request`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                tab_num: parseInt(currentTabNum), 
-                start_date: start, 
-                end_date: end, 
-                vacation_type: type 
-            })
-        });
-        alert("Заявление отправлено начальнику цеха!");
-        loadVacationInfo();
-    } catch (err) {
-        alert("Не удалось отправить заявление");
-    }
-}
-
-function handleLogout() { 
-    location.reload(); 
 }
