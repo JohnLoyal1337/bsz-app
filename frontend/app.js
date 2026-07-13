@@ -37,7 +37,7 @@ async function handleLogin() {
         // Меняем экраны
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("main-screen").style.display = "block";
-        document.getElementById("user-name-display").innerText = user.name;
+        document.getElementById("user-name").innerText = user.name;
 
         // Показываем кнопку руководителя, если вошел шеф
         const managerBtn = document.getElementById("manager-btn");
