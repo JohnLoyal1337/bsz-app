@@ -44,7 +44,6 @@ async function handleLogin() {
         if (loginScreen) {
             loginScreen.style.display = "none";
         }
-
         // Показываем главное приложение
         if (mainApp) {
             mainApp.style.display = "block";
