@@ -5,7 +5,7 @@ let currentTabNum = null;
 let currentUserRole = null;
 
 // 1. ФУНКЦИЯ АВТОРИЗАЦИИ (ВХОД)
-async function login() {
+async function handleLogin() {
     const tabNumInput = document.getElementById("tab-num").value.trim();
     const passwordInput = document.getElementById("password").value.trim();
     const errorBlock = document.getElementById("login-error");
