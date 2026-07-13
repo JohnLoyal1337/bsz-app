@@ -49,9 +49,11 @@ async function handleLogin() {
             mainApp.style.display = "block";
         }
 
+
         // Выводим имя пользователя
         if (userNameDiv) {
             userNameDiv.innerText = user.name;
+            localStorage.setItem("bsz_user", JSON.stringify(user));
         }
 
         // Показываем кнопку руководителя, если вошел шеф
@@ -109,9 +111,11 @@ function handleLogout() {
     // Показываем карточку входа обратно
     if (authBlock) {
         authBlock.style.display = "block";
+        localStorage.removeItem("bsz_user");
     } else {
         console.error("Ошибка при выходе: Блок 'auth-block' не найден в HTML!");
     }
+    localStorage.removeItem("bsz_user");
 
     // Прячем блок ошибок, если он есть
     if (loginError) {
@@ -303,3 +307,30 @@ async function approveRequest(requestId) {
         alert(err.message);
     }
 }
+// 9. Автоматическая проверка авторизации при загрузке сайта
+document.addEventListener("DOMContentLoaded", () => {
+    const savedUser = localStorage.getItem("bsz_user");
+
+    if (savedUser) {
+        // Если нашли пользователя в памяти — парсим его данные
+        const user = JSON.parse(savedUser);
+        
+        const loginScreen = document.getElementById("auth-block");
+        const mainApp = document.getElementById("main-app");
+        const userNameDiv = document.getElementById("user-name");
+        const managerBtn = document.getElementById("manager-btn");
+
+        // Сразу переключаем экраны, минуя окно логина
+        if (loginScreen) loginScreen.style.style.display = "none";
+        if (mainApp) mainApp.style.display = "block";
+        if (userNameDiv) userNameDiv.innerText = user.name;
+
+        // Показываем кнопку руководителя, если вернулся шеф
+        if (managerBtn) {
+            managerBtn.style.display = user.role === 'manager' ? "inline-block" : "none";
+        }
+
+        // Тут можно вызвать функцию загрузки данных (например, загрузку отпусков), если она есть
+        // Например: loadVacations();
+    }
+});
