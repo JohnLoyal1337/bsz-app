@@ -5,14 +5,13 @@ from typing import List, Dict, Any
 
 app = FastAPI(title="Личный кабинет БСЗ")
 
-# Настройка CORS, чтобы фронтенд с Vercel мог достучаться до бэкенда на Render
+# --- ИСПРАВЛЕННЫЙ БЛОК CORS ---
 app.add_middleware(
-    CORSMiddleware(
-        allow_origins=["*"], # В будущем можно заменить на конкретный URL твоего фронтенда
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    CORSMiddleware,  # ТУТ ТЕПЕРЬ ЗАПЯТАЯ ВМЕСТО СКОБКИ
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # --- PYDANTIC МОДЕЛИ ДЛЯ ВАЛИДАЦИИ ЗАПРОСОВ ---
