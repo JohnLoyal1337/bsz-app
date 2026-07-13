@@ -321,7 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const managerBtn = document.getElementById("manager-btn");
 
         // Сразу переключаем экраны, минуя окно логина
-        if (loginScreen) loginScreen.style.style.display = "none";
+        if (loginScreen) loginScreen.style.display = "none";
         if (mainApp) mainApp.style.display = "block";
         if (userNameDiv) userNameDiv.innerText = user.name;
 
