@@ -238,11 +238,10 @@ async function loadVacationInfo() {
 
 // 6. ОТПРАВКА ЗАЯВЛЕНИЯ НА ОТПУСК / ОТГУЛ
 async function submitVacation() {
-    // Безопасное получение типа отпуска: если элемента нет, код не упадёт, а запишет "отпуск"
-    const typeEl = document.getElementById("vacation-type");
-    const type = typeEl ? typeEl.value : "отпуск";
+    // Получаем тип из выпадающего списка (используем точный id="vac-type")
+    const typeEl = document.getElementById("vac-type");
+    const type = typeEl ? typeEl.value : "Очередной отпуск";
 
-    // Твои исправленные рабочие ID
     const start = document.getElementById("vac-start").value;
     const end = document.getElementById("vac-end").value;
 
@@ -250,11 +249,10 @@ async function submitVacation() {
         alert("Выберите даты начала и окончания!");
         return;
     }
-    // --- РАСЧЁТ И ВАЛИДАЦИЯ КОЛИЧЕСТВА ДНЕЙ ---
+
+    // Рассчитываем количество запрашиваемых дней
     const startDate = new Date(start);
     const endDate = new Date(end);
-    
-    // Считаем разницу в миллисекундах и переводим в дни (включая день начала)
     const timeDiff = endDate - startDate;
     const daysRequested = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
 
@@ -263,41 +261,59 @@ async function submitVacation() {
         return;
     }
 
-    // Забираем доступные дни из твоего тега vacation-days-count
-    const availableDaysEl = document.getElementById("vacation-days-count");
+    // --- ДИФФЕРЕНЦИРОВАННАЯ ВАЛИДАЦИЯ ---
     
-    if (availableDaysEl) {
-        const daysAvailable = parseInt(availableDaysEl.innerText) || 0;
+    if (type === "Очередной отпуск") {
+        // Проверяем лимит дней только для Очередного отпуска
+        const availableDaysEl = document.getElementById("vacation-days-count");
         
-        // Если Иванов просит больше, чем у него есть
-        if (daysRequested > daysAvailable) {
-            alert(`Ошибка! Вы запрашиваете ${daysRequested} дн. отпуска, а вам доступно только ${daysAvailable} дн.`);
-            return; // Жёсткий стоп. Код дальше (к запросу fetch) не пойдёт!
+        if (availableDaysEl) {
+            const daysAvailable = parseInt(availableDaysEl.innerText) || 0;
+            
+            if (daysRequested > daysAvailable) {
+                alert(`Ошибка! Вы запрашиваете ${daysRequested} дн. очередного отпуска, а вам доступно только ${daysAvailable} дн.`);
+                return; // Блокируем отправку на бэкенд
+            }
+        }
+    } else if (type === "Отгул за свой счёт") {
+        // Для отгулов лимит из базы не проверяем, но ставим разумное ограничение
+        const MAX_DAYS_OFF = 14;
+        if (daysRequested > MAX_DAYS_OFF) {
+            alert(`Ошибка! Отгул за свой счёт не может превышать ${MAX_DAYS_OFF} дней за один раз.`);
+            return; // Блокируем отправку на бэкенд
         }
     }
+
     // --- КОНЕЦ ВАЛИДАЦИИ ---
 
+    // Дальше идёт твой fetch-запрос отправки данных на бэкенд
     try {
+        // Формируем объект для отправки
+        const payload = {
+            tab_num: currentTabNum.toString(),
+            type: type,
+            start_date: start,
+            end_date: end
+        };
+
         const response = await fetch(`${API_URL}/vacation/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tab_num: currentTabNum.toString(),
-                request_type: type,
-                start_date: start,
-                end_date: end
-            })
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) throw new Error("Ошибка при отправке заявления");
 
-        alert("Заявление отправлено начальнику цеха!");
+        alert("Заявление успешно отправлено!");
         
-        // Сразу обновляем таблицу истории, чтобы строчка появилась автоматически!
-        loadVacationInfo();
+        // Обновляем историю заявлений на экране
+        if (typeof loadVacationInfo === "function") {
+            loadVacationInfo();
+        }
 
-    } catch (err) {
-        alert(err.message);
+    } catch (error) {
+        console.error("Ошибка:", error);
+        alert("Не удалось отправить заявление. Попробуйте позже.");
     }
 }
 
