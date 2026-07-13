@@ -34,18 +34,42 @@ async function handleLogin() {
         currentTabNum = user.tab_num;
         currentUserRole = user.role;
 
-        // Меняем экраны
-        document.getElementById("login-screen").style.display = "none";
-        document.getElementById("main-app").style.display = "block";
-        document.getElementById("user-name").innerText = user.name;
+        // --- БЕЗОПАСНАЯ СМЕНА ЭКРАНОВ ---
+        const loginScreen = document.getElementById("login-screen");
+        const mainApp = document.getElementById("main-app");
+        const managerBtn = document.getElementById("manager-btn");
+        const userNameDiv = document.getElementById("user-name");
+
+        // Пытаемся скрыть экран логина
+        if (loginScreen) {
+            loginScreen.style.display = "none";
+        } else {
+            console.warn("Предупреждение: Блок 'login-screen' не найден. Попробуем найти элемент 'login'...");
+            const altLogin = document.getElementById("login");
+            if (altLogin) altLogin.style.display = "none";
+        }
+
+        // Пытаемся показать главное приложение
+        if (mainApp) {
+            mainApp.style.display = "block";
+        } else {
+            console.error("Критическая ошибка: Блок 'main-app' не найден в HTML!");
+        }
+
+        // Выводим имя пользователя
+        if (userNameDiv) {
+            userNameDiv.innerText = user.name;
+        }
 
         // Показываем кнопку руководителя, если вошел шеф
-        const managerBtn = document.getElementById("manager-btn");
-        if (user.role === 'manager') {
-            managerBtn.style.display = "inline-block";
-        } else {
-            managerBtn.style.display = "none";
+        if (managerBtn) {
+            if (user.role === 'manager') {
+                managerBtn.style.display = "inline-block";
+            } else {
+                managerBtn.style.display = "none";
+            }
         }
+        // --------------------------------
 
         // По умолчанию загружаем первую вкладку (Расчетный листок)
         switchTab('salary-tab');
