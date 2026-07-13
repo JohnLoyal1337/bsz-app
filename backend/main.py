@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -96,28 +97,52 @@ def get_vacation_info(data: TabNumModel):
     }
 
 # 4. Отправка заявления на отпуск/отгул
-@app.post("/vacation/request")
-def create_vacation_request(data: VacationRequestModel):
-    global vacation_requests_counter
-    if data.tab_num not in DB_EMPLOYEES:
-        raise HTTPException(status_code=404, detail="Сотрудник не найден")
+from datetime import datetime # Обязательно проверь, что этот импорт есть вверху файла
+
+@app.post("/vacation/approve/{request_id}")
+async def approve_vacation(request_id: int):
+    # 1. Находим заявку в базе
+    vacation_request = db.query(Vacation).filter(Vacation.id == request_id).first()
     
-    new_request = {
-        "id": vacation_requests_counter,
-        "tab_num": data.tab_num,
-        "name": DB_EMPLOYEES[data.tab_num]["name"],
-        "request_type": data.request_type,
-        "start_date": data.start_date,
-        "end_date": data.end_date,
-        "status": "Ожидает рассмотрения"
-    }
+    if not vacation_request:
+        return {"error": "Заявление не найдено"}, 404
+        
+    # Меняем статус
+    vacation_request.status = "Утвержден"
     
-    # Добавляем и сотруднику в личную историю, и в общий список для шефа
-    DB_EMPLOYEES[data.tab_num]["vacations"].append(new_request)
-    ALL_VACATION_REQUESTS.append(new_request)
+    # Приводим тип к нижнему регистру для безопасной проверки
+    req_type = vacation_request.request_type.lower() if vacation_request.request_type else ""
     
-    vacation_requests_counter += 1
-    return {"status": "success", "message": "Заявление успешно отправлено!"}
+    # 2. ЕСЛИ это очередной отпуск (в любом регистре), уменьшаем баланс
+    if "очередной" in req_type or req_type == "отпуск":
+        try:
+            # Безопасно переводим строки в даты для расчёта, если они сохранены как текст
+            if isinstance(vacation_request.start_date, str):
+                start_dt = datetime.strptime(vacation_request.start_date, "%Y-%m-%d").date()
+                end_dt = datetime.strptime(vacation_request.end_date, "%Y-%m-%d").date()
+            else:
+                start_dt = vacation_request.start_date
+                end_dt = vacation_request.end_date
+
+            # Считаем количество дней
+            days = (end_dt - start_dt).days + 1
+            
+            # Находим сотрудника (приводим к строке/числу в зависимости от типа в твоей базе)
+            user = db.query(User).filter(User.tab_num == str(vacation_request.tab_num)).first()
+            
+            if user:
+                # Вычитаем дни из его личного баланса
+                user.vacation_days_left -= days
+                print(f"Успешно списано {days} дн. у сотрудника {user.tab_num}")
+            else:
+                print(f"Предупреждение: Пользователь с табельным {vacation_request.tab_num} не найден")
+                
+        except Exception as e:
+            print(f"Ошибка при подсчете дней отпуска: {e}")
+            # Если даты не распарсились, статус всё равно обновится, но база не упадёт
+            
+    db.commit()
+    return {"message": "Заявление успешно утверждено, изменения сохранены"}
 
 # 5. Получение списка всех заявок для руководителя
 @app.get("/manager/requests")
