@@ -53,8 +53,8 @@ async function handleLogin() {
         // Выводим имя пользователя
         if (userNameDiv) {
             userNameDiv.innerText = user.name;
-            localStorage.setItem("bsz_user", JSON.stringify(user));
         }
+        localStorage.setItem("bsz_user", JSON.stringify(user));
 
         // Показываем кнопку руководителя, если вошел шеф
         if (managerBtn) {
@@ -111,10 +111,10 @@ function handleLogout() {
     // Показываем карточку входа обратно
     if (authBlock) {
         authBlock.style.display = "block";
-        localStorage.removeItem("bsz_user");
     } else {
         console.error("Ошибка при выходе: Блок 'auth-block' не найден в HTML!");
     }
+
     localStorage.removeItem("bsz_user");
 
     // Прячем блок ошибок, если он есть
