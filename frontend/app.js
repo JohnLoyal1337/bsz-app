@@ -36,7 +36,7 @@ async function handleLogin() {
 
         // Меняем экраны
         document.getElementById("login-screen").style.display = "none";
-        document.getElementById("main-screen").style.display = "block";
+        document.getElementById("main-app").style.display = "block";
         document.getElementById("user-name").innerText = user.name;
 
         // Показываем кнопку руководителя, если вошел шеф
@@ -68,12 +68,12 @@ async function handleLogin() {
 
 
 // 2. ВЫХОД ИЗ СИСТЕМЫ
-function logout() {
+function handleLogout() {
     currentTabNum = null;
     currentUserRole = null;
-    document.getElementById("tab-num").value = "";
-    document.getElementById("password").value = "";
-    document.getElementById("main-screen").style.display = "none";
+    document.getElementById("login-tab").value = "";  
+    document.getElementById("login-pass").value = ""; 
+    document.getElementById("main-app").style.display = "none"; 
     document.getElementById("login-screen").style.display = "block";
     if(document.getElementById("login-error")) {
         document.getElementById("login-error").style.display = "none";
